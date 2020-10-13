@@ -22,11 +22,11 @@ public class GrassSpanner : MonoBehaviour {
 
     #endregion
 
-    void Start()
+    private void Start()
     {
-        this.random = new Random();
+        random = new Random();
         GenerateTerrain();
-        GenerateField(30, 50);
+        GenerateField(50, 50);
     }
 
 
@@ -35,14 +35,14 @@ public class GrassSpanner : MonoBehaviour {
     /// </summary>
     private void GenerateTerrain()
     {
-        List<Vector3> verts = new List<Vector3>();
+        List<Vector3> _verts = new List<Vector3>();
         List<int> tris = new List<int>();
 
-        for (int i = 0; i < this.terrainSize; i++)
+        for (int i = 0; i < terrainSize; i++)
         {
-            for (int j = 0; j < this.terrainSize; j++)
+            for (int j = 0; j < terrainSize; j++)
             {
-                verts.Add(new Vector3(i, heightMap.GetPixel(i, j).grayscale * this.terrainHeight , j));
+                _verts.Add(new Vector3(i, heightMap.GetPixel(i, j).grayscale * terrainHeight , j));
                 if (i == 0 || j == 0)
                     continue;
                 tris.Add(terrainSize * i + j);
@@ -54,26 +54,27 @@ public class GrassSpanner : MonoBehaviour {
             }
         }
 
-        Vector2[] uvs = new Vector2[verts.Count];
+        Vector2[] uvs = new Vector2[_verts.Count];
 
-        for (var i = 0; i < uvs.Length; i++)
+        for (int i = 0; i < uvs.Length; i++)
         {
-            uvs[i] = new Vector2(verts[i].x, verts[i].z);
+            uvs[i] = new Vector2(_verts[i].x, _verts[i].z);
         }
 
         GameObject plane = new GameObject("groundPlane");
         plane.AddComponent<MeshFilter>();
-        MeshRenderer renderer = plane.AddComponent<MeshRenderer>();
-        renderer.sharedMaterial = terrainMat;
+        MeshRenderer _renderer = plane.AddComponent<MeshRenderer>();
+        _renderer.sharedMaterial = terrainMat;
 
-        Mesh groundMesh = new Mesh();
-        groundMesh.vertices = verts.ToArray(); 
-        groundMesh.uv = uvs;
-        groundMesh.triangles = tris.ToArray();
+        Mesh groundMesh = new Mesh
+        {
+            vertices = _verts.ToArray(), uv = uvs, triangles = tris.ToArray()
+        };
+
         groundMesh.RecalculateNormals(); 
         plane.GetComponent<MeshFilter>().mesh = groundMesh;
 
-        this.verts.Clear();
+        verts.Clear();
     }
 
     /// <summary>
@@ -90,13 +91,13 @@ public class GrassSpanner : MonoBehaviour {
         }
 
         Vector3 startPosition = new Vector3(0, 0, 0);
-        Vector3 patchSize = new Vector3(terrainSize / grassPatchRowCount, 0, terrainSize / grassPatchRowCount);
+        Vector3 patchSize = new Vector3((float)terrainSize / grassPatchRowCount, 0, (float)terrainSize / grassPatchRowCount);
 
         for (int x = 0; x < grassPatchRowCount; x++)
         {
             for (int y = 0; y < grassPatchRowCount; y++)
             {
-                this.GenerateGrass(startPosition, patchSize, grassPatchRowCount);
+                GenerateGrass(startPosition, patchSize, grassPatchRowCount);
                 startPosition.x += patchSize.x;
             }
 
@@ -106,57 +107,59 @@ public class GrassSpanner : MonoBehaviour {
 
         GameObject grassLayer;
         MeshFilter mf;
-        MeshRenderer renderer;
+        MeshRenderer _renderer;
         Mesh m;
 
         while (verts.Count > 65000)
         {
-            m = new Mesh();
-            m.vertices = verts.GetRange(0, 65000).ToArray();
+            m = new Mesh
+            {
+                vertices = verts.GetRange(0, 65000).ToArray()
+            };
             m.SetIndices(indices.ToArray(), MeshTopology.Points, 0);
 
             grassLayer = new GameObject("grassLayer");
             mf = grassLayer.AddComponent<MeshFilter>();
-            renderer = grassLayer.AddComponent<MeshRenderer>();
-            renderer.sharedMaterial = grassMat;
+            _renderer = grassLayer.AddComponent<MeshRenderer>();
+            _renderer.sharedMaterial = grassMat;
             mf.mesh = m;
             verts.RemoveRange(0, 65000);
         }
 
-        m = new Mesh();
-        m.vertices = verts.ToArray();
+        m = new Mesh
+        {
+            vertices = verts.ToArray()
+        };
         m.SetIndices(indices.GetRange(0, verts.Count).ToArray(), MeshTopology.Points, 0);
         grassLayer = new GameObject("grassLayer");
         mf = grassLayer.AddComponent<MeshFilter>();
-        renderer = grassLayer.AddComponent<MeshRenderer>();
-        renderer.sharedMaterial = grassMat;
+        _renderer = grassLayer.AddComponent<MeshRenderer>();
+        _renderer.sharedMaterial = grassMat;
         mf.mesh = m;
-
-        return;
     }
 
     private void GenerateGrass(Vector3 startPosition, Vector3 patchSize, int grassCountPerPatch)
     {
-        for (var i = 0; i < grassCountPerPatch; i++)
+        for (int i = 0; i < grassCountPerPatch; i++)
         {
-            var randomizedZDistance = (float)this.random.NextDouble() * patchSize.z;
-            var randomizedXDistance = (float)this.random.NextDouble() * patchSize.x;
+            float randomizedZDistance = (float)random.NextDouble() * patchSize.z;
+            float randomizedXDistance = (float)random.NextDouble() * patchSize.x;
 
-            int indexX = (int)((startPosition.x + randomizedXDistance));
-            int indexZ = (int)((startPosition.z + randomizedZDistance));
+            int indexX = (int)(startPosition.x + randomizedXDistance);
+            int indexZ = (int)(startPosition.z + randomizedZDistance);
 
             if (indexX >= terrainSize)
             {
-                indexX = (int)terrainSize - 1;
+                indexX = terrainSize - 1;
             }
 
             if (indexZ >= terrainSize)
             {
-                indexZ = (int)terrainSize - 1;
+                indexZ = terrainSize - 1;
             }
 
-            var currentPosition = new Vector3(startPosition.x + (randomizedXDistance), heightMap.GetPixel(indexX, indexZ).grayscale * (terrainHeight + 1), startPosition.z + randomizedZDistance);
-            this.verts.Add(currentPosition);
+            Vector3 currentPosition = new Vector3(startPosition.x + randomizedXDistance, heightMap.GetPixel(indexX, indexZ).grayscale * (terrainHeight + 1), startPosition.z + randomizedZDistance);
+            verts.Add(currentPosition);
         }
     }
 
