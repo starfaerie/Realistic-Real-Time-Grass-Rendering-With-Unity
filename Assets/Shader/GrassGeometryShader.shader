@@ -3,8 +3,9 @@
 
 		_MainTex("Albedo (RGB)", 2D) = "white" {}
 		_AlphaTex("Alpha (A)", 2D) = "white" {}
-		_Height("Grass Height", float) = 3
+		_Height("Grass Height", range(0.1,5)) = 3
 		_Width("Grass Width", range(0, 0.1)) = 0.05
+		_WindOscillationStrength("Wind Strength", range(0,5)) = 2.5
 
 	}
 	SubShader{
@@ -26,15 +27,16 @@
 			#pragma vertex vert
 			#pragma fragment frag
 			#pragma geometry geom
-			#include "UnityLightingCommon.cginc" // 用来处理光照的一些效果
+			#include "UnityLightingCommon.cginc" // Used to get scene lighting data
 
 			#pragma target 4.0
 
 			sampler2D _MainTex;
 			sampler2D _AlphaTex;
 
-			float _Height;//草的高度
-			float _Width;//草的宽度
+			float _Height;
+			float _Width;
+			float _WindOscillationStrength;
 			struct v2g
 			{
 				float4 pos : SV_POSITION;
@@ -86,7 +88,7 @@
 
 
 			_Width = _Width + (random / 50);
-			_Height = _Height +(random / 5);
+			_Height = _Height + (random / 5);
 
 
 			g2f v[vertexCount] = {
@@ -95,15 +97,13 @@
 				createGSOut(), createGSOut(), createGSOut(), createGSOut()
 			};
 
-			//处理纹理坐标
+			//Getting texture coordinates
 			float currentV = 0;
 			float offsetV = 1.f /((vertexCount / 2) - 1);
 
-			//处理当前的高度
-			float currentHeightOffset = 0;
 			float currentVertexHeight = 0;
 
-			//风的影响系数
+			//Wind influence
 			float windCoEff = 0;
 
 			for (int i = 0; i < vertexCount; i++)
@@ -129,9 +129,8 @@
 				wind.y += cos(_Time.x + root.z / 80);
 				wind *= lerp(0.7, 1.0, 1.0 - random);
 
-				float oscillationStrength = 2.5f;
 				float sinSkewCoeff = random;
-				float lerpCoeff = (sin(oscillationStrength * _Time.x + sinSkewCoeff) + 1.0) / 2;
+				float lerpCoeff = (sin(_WindOscillationStrength * _Time.x + sinSkewCoeff) + 1.0) / 2;
 				float2 leftWindBound = wind * (1.0 - oscillateDelta);
 				float2 rightWindBound = wind * (1.0 + oscillateDelta);
 
